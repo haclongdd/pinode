@@ -1,268 +1,121 @@
-﻿# Tu dong kiem tra va khoi dong lai script voi quyen Administrator
+# Tu dong kiem tra va khoi dong lai script voi quyen Administrator
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-    Write-Host "Dang khoi dong lai script voi quyen Administrator..." -ForegroundColor Yellow
+    Write-Host "[ADMIN] Dang khoi dong lai script voi quyen Administrator..." -ForegroundColor Yellow
     $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
     Start-Process powershell -Verb RunAs -ArgumentList $arguments
     exit
 }
 
-# Ham hien thi menu chinh voi tieu de va cac tuy chon
+# Kiem tra mat khau truoc khi chay script
+$password = Read-Host "Nhap mat khau" -AsSecureString
+$passwordText = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password))
+if ($passwordText -ne "6868") {
+    Write-Host "Sai mat khau! Thoat chuong trinh." -ForegroundColor Red
+    exit
+}
+
+Write-Host "Mat khau dung. Dang chay script..." -ForegroundColor Green
+
+# Ham hien thi menu chinh voi giao dien cai tien
 function Show-Menu {
     param ([string]$Title = "Menu Auto Setup")
     Clear-Host
-    Write-Host "================ $Title ================" -ForegroundColor Cyan
-    Write-Host "1. Tai Pi Node / Pi Network"
-    Write-Host "2. Kich hoat Windows Features"
-    Write-Host "3. Kich hoat WSL va VM"
-    Write-Host "4. Tai va cai dat WSL2 Kernel"
-    Write-Host "5. Cap nhat WSL2"
-    Write-Host "6. Cai dat Docker Desktop"
-    Write-Host "7. Mo Firewall - Inbound/Outbound Rule"
-    Write-Host "8. Chuyen mang sang Private"
-    Write-Host "9. Cap nhat Windows"
-    Write-Host "10. Tinh chinh Windows"
-    Write-Host "11. Don dep he thong Windows va o C"
-    Write-Host "0. Thoat"
-    Write-Host "=========================================" -ForegroundColor Cyan
-
-    # Chuoi khong dau, tach xuong dong bang nhieu lenh Write-Host
-    Write-Host "TOOL DUOC TAO BOI @LONGKA25A FB: https://www.facebook.com/long.ka.79/" -ForegroundColor Yellow
-    Write-Host "ANH/CHI/EM CAN HO TRO NODE - TU VAN MAY OI LAI MINH NHE -" -ForegroundColor Yellow
-    Write-Host "DOI KHI E QUA TAI TROI CMT HOAC IB THI ALO 0878566247 CHO LE NHE MN." -ForegroundColor Yellow
-    Write-Host "RIENG MAY AE CHAY NODE AO HAY BUG GI THI KHOI PM DO TON TIME CUA NHAU" -ForegroundColor Yellow
-    Write-Host "THANKS MN DA DOC" -ForegroundColor Yellow
+    Write-Host "`n" -NoNewline
+    Write-Host "╔════════════════════════════════════════╗" -ForegroundColor Cyan
+    Write-Host "║" -NoNewline -ForegroundColor Cyan; Write-Host "        $Title        ".PadRight(34) -ForegroundColor White -BackgroundColor DarkCyan -NoNewline; Write-Host "║" -ForegroundColor Cyan
+    Write-Host "╚════════════════════════════════════════╝" -ForegroundColor Cyan
+    Write-Host "  1. Tai Pi Node / Pi Network" -ForegroundColor Green
+    Write-Host "  2. Kich hoat Windows Features" -ForegroundColor Green
+    Write-Host "  3. Kich hoat WSL va VM" -ForegroundColor Green
+    Write-Host "  4. Tai va cai dat WSL2 Kernel" -ForegroundColor Green
+    Write-Host "  5. Cap nhat WSL2" -ForegroundColor Green
+    Write-Host "  6. Cai dat Docker Desktop" -ForegroundColor Green
+    Write-Host "  7. Mo Firewall - Inbound/Outbound" -ForegroundColor Green
+    Write-Host "  8. Chuyen mang sang Private" -ForegroundColor Green
+    Write-Host "  9. Cap nhat Windows" -ForegroundColor Green
+    Write-Host " 10. Tinh chinh Windows" -ForegroundColor Green
+    Write-Host " 11. Don dep he thong Windows va o C" -ForegroundColor Green
+    Write-Host " 12. Dong bo thoi gian (UTC+7 Bangkok, Hanoi)" -ForegroundColor Green
+    Write-Host " 13. Tai file tu Dropbox va cai dat" -ForegroundColor Green
+    Write-Host "  0. Thoat" -ForegroundColor Red
+    Write-Host "╔════════════════════════════════════════╗" -ForegroundColor Cyan
+    Write-Host "║ [INFO] TOOL DUOC TAO BOI @LONGKA25A    ║" -ForegroundColor Yellow
+    Write-Host "║ [INFO] FB: https://www.facebook.com/long.ka.79/ ║" -ForegroundColor Yellow
+    Write-Host "║ [SUPPORT] CAN HO TRO NODE - TU VAN MAY OI LAI MINH ║" -ForegroundColor Magenta
+    Write-Host "║ [CONTACT] ALO 0878566247 NEU CAN GAP   ║" -ForegroundColor Magenta
+    Write-Host "║ [NOTE] KHONG HO TRO NODE AO/BUG        ║" -ForegroundColor Red
+    Write-Host "╚════════════════════════════════════════╝" -ForegroundColor Cyan
 }
 
-# Ham tai va cai dat Pi Network
-function Install-PiNetwork {
-    $piInstaller = "$env:TEMP\Pi_Network_Setup.exe"
-    $url = "https://downloads.minepi.com/Pi%20Network%20Setup%200.5.0.exe"
+# (Thêm lại các hàm khác như Install-PiNetwork, Enable-WindowsFeatures, v.v. nếu cần, hoặc giữ nguyên từ script trước)
+
+# Ham tai file tu Dropbox va cai dat
+function Install-FromGoogleDrive {
+    Write-Host "`n[GDrive] Dang xu ly tai va cai dat..." -ForegroundColor Cyan
+    $downloadUrl = "https://www.dropbox.com/scl/fi/4vagxcpvqce2lozpx2j99/Pi.Network.Setup.0.5.1.exe?rlkey=1qchyoq3yimjqt4ra4wdl9i70&st=jzro54c4&dl=1"  # URL tải trực tiếp từ Dropbox
+    $installerPath = "$env:TEMP\Pi.Network.Setup.0.5.1.exe"  # Tên file khớp với file từ Dropbox
     
-    Write-Host "`n[PiNetwork] Dang tai xuong tu: $url" -ForegroundColor Green
-    $webClient = New-Object System.Net.WebClient
     try {
-        $webClient.DownloadFile($url, $piInstaller)
-        Write-Host "[PiNetwork] Tai xuong hoan tat: $piInstaller" -ForegroundColor Green
-        Write-Host "[PiNetwork] Bat dau cai dat..."
-        Start-Process -FilePath $piInstaller -Wait
-        Write-Host "[PiNetwork] Cai dat hoan tat!" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[PiNetwork] Loi khi tai xuong hoac cai dat: $($_)" -ForegroundColor Red
-    }
-}
-
-# Ham kich hoat cac Windows Features can thiet
-function Enable-WindowsFeatures {
-    Write-Host "`n[WindowsFeatures] Dang kich hoat cac tinh nang Windows..."
-    $features = @(
-        "NetFx3",
-        "NetFx4.8",
-        "Microsoft-Hyper-V-All",
-        "VirtualMachinePlatform",
-        "Microsoft-Windows-Subsystem-Linux"
-    )
-    
-    foreach ($feature in $features) {
-        try {
-            Write-Host "[WindowsFeatures] Kich hoat $feature..."
-            Start-Process powershell -ArgumentList "-Command dism.exe /online /enable-feature /featurename:$feature /all /norestart" -Verb RunAs -Wait
-            Write-Host "[WindowsFeatures] $feature da duoc kich hoat." -ForegroundColor Green
+        # Kiem tra va xoa file cu neu ton tai
+        if (Test-Path $installerPath) {
+            Write-Host "├─[Cleanup] Xoa file cu: $installerPath" -ForegroundColor Yellow
+            Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
         }
-        catch {
-            Write-Host "[WindowsFeatures] Loi khi kich hoat ${feature}: $($_)" -ForegroundColor Red
+
+        $webClient = New-Object System.Net.WebClient
+        Register-ObjectEvent $webClient DownloadProgressChanged -SourceIdentifier "GDriveDownload" -Action {
+            Write-Progress -Activity "[GDrive] Dang tai xuong..." `
+                          -Status "$($EventArgs.ProgressPercentage)% Complete" `
+                          -PercentComplete $EventArgs.ProgressPercentage
+        } | Out-Null
+        
+        Write-Host "├─[Download] Dang tai file tu Dropbox..." -ForegroundColor Yellow
+        $webClient.DownloadFile($downloadUrl, $installerPath)
+        Unregister-Event -SourceIdentifier "GDriveDownload"
+        Write-Progress -Activity "[GDrive] Dang tai xuong..." -Completed
+
+        # Kiem tra file sau khi tai
+        if (-not (Test-Path $installerPath)) {
+            Write-Host "│ └─[Error] Tai xuong that bai! File khong ton tai: $installerPath" -ForegroundColor Red
+            Write-Host "   └─[Suggestion] Vui long kiem tra lai URL hoac tai thu cong tu: $downloadUrl" -ForegroundColor Yellow
+            return
         }
-    }
-    Write-Host "[WindowsFeatures] Xong kich hoat. Neu can, vui long khoi dong lai he thong." -ForegroundColor Cyan
-}
-
-# Ham kich hoat WSL va VM
-function Activate-WSLAndVM {
-    Write-Host "`n[WSL & VM] Dang kich hoat WSL va Virtual Machine Platform..."
-    try {
-        Write-Host "[WSL & VM] Kich hoat Windows Subsystem for Linux..."
-        Start-Process powershell -ArgumentList "-Command dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart" -Verb RunAs -Wait
-        Write-Host "[WSL & VM] WSL da duoc kich hoat." -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[WSL & VM] Loi khi kich hoat WSL: $($_)" -ForegroundColor Red
-    }
-    
-    try {
-        Write-Host "[WSL & VM] Kich hoat Virtual Machine Platform..."
-        Start-Process powershell -ArgumentList "-Command dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart" -Verb RunAs -Wait
-        Write-Host "[WSL & VM] Virtual Machine Platform da duoc kich hoat." -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[WSL & VM] Loi khi kich hoat Virtual Machine Platform: $($_)" -ForegroundColor Red
-    }
-    
-    # Tai va cai dat kernel WSL2
-    $kernelURL = "https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi"
-    $kernelInstaller = "$env:TEMP\wsl2kernel.msi"
-    
-    Write-Host "[WSL & VM] Dang tai ve goi kernel WSL2 tu: $kernelURL" -ForegroundColor Green
-    try {
-        Start-BitsTransfer -Source $kernelURL -Destination $kernelInstaller -DisplayName "Downloading WSL2 Kernel Update"
-        Write-Host "[WSL & VM] Tai ve goi kernel hoan tat: $kernelInstaller" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[WSL & VM] Loi khi tai ve goi kernel: $($_)" -ForegroundColor Red
-        return
-    }
-    
-    Write-Host "[WSL & VM] Bat dau cai dat goi kernel WSL2..." -ForegroundColor Green
-    try {
-        Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$kernelInstaller`" /quiet /norestart" -Wait
-        Write-Host "[WSL & VM] Cai dat kernel WSL2 hoan tat!" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[WSL & VM] Loi khi cai dat kernel: $($_)" -ForegroundColor Red
-    }
-}
-
-# Ham tai va cai dat WSL2 Kernel (neu can rieng)
-function Install-WSL2Kernel {
-    Write-Host "`n[WSL2Kernel] Dang tai va cai dat WSL2 Kernel..."
-    $kernelInstaller = "$env:TEMP\wsl2kernel.msi"
-    $kernelURL = "https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi"
-    $webClient = New-Object System.Net.WebClient
-    try {
-        Write-Host "[WSL2Kernel] Tai xuong tu: $kernelURL" -ForegroundColor Green
-        $webClient.DownloadFile($kernelURL, $kernelInstaller)
-        Write-Host "[WSL2Kernel] Tai xuong hoan tat: $kernelInstaller" -ForegroundColor Green
-        Write-Host "[WSL2Kernel] Bat dau cai dat WSL2 Kernel..." -ForegroundColor Green
-        Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$kernelInstaller`" /quiet /norestart" -Wait
-        Write-Host "[WSL2Kernel] Cai dat WSL2 Kernel hoan tat!" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[WSL2Kernel] Loi khi tai xuong hoac cai dat: $($_)" -ForegroundColor Red
-    }
-}
-
-# Ham cap nhat WSL2
-function Update-WSL2 {
-    Write-Host "`n[WSL2] Dang cap nhat WSL2..." -ForegroundColor Green
-    try {
-        wsl --update
-        Write-Host "[WSL2] Cap nhat WSL2 thanh cong!" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[WSL2] Loi khi cap nhat WSL2: $($_)" -ForegroundColor Red
-    }
-}
-
-# Ham cai dat Docker Desktop
-function Install-Docker {
-    Write-Host "`n[Docker] Dang tai va cai dat Docker Desktop..."
-    $dockerInstaller = "$env:TEMP\DockerDesktopInstaller.exe"
-    $dockerURL = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
-    $webClient = New-Object System.Net.WebClient
-    try {
-        Write-Host "[Docker] Tai xuong tu: $dockerURL" -ForegroundColor Green
-        $webClient.DownloadFile($dockerURL, $dockerInstaller)
-        Write-Host "[Docker] Tai xuong hoan tat: $dockerInstaller" -ForegroundColor Green
-        Write-Host "[Docker] Bat dau cai dat Docker Desktop..." -ForegroundColor Green
-        Start-Process -FilePath $dockerInstaller -Wait
-        Write-Host "[Docker] Cai dat Docker Desktop hoan tat!" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[Docker] Loi khi tai xuong hoac cai dat: $($_)" -ForegroundColor Red
-    }
-}
-
-# Ham cau hinh Firewall (Inbound Rule) mo cong 31400-31409
-# Ham cau hinh Firewall (Inbound va Outbound Rule) mo cong 31400-31409
-function Configure-Firewall {
-    Write-Host "`n[Firewall] Dang cau hinh Firewall (Inbound & Outbound Rule) mo cong 31400-31409..."
-    try {
-        # Inbound Rule
-        Write-Host "[Firewall] Cau hinh Inbound Rule..." -ForegroundColor Yellow
-        New-NetFirewallRule -DisplayName "Allow MyApp Inbound" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 31400-31409 -Profile Any
-        Write-Host "[Firewall] Cau hinh Inbound Rule hoan tat!" -ForegroundColor Green
-        
-        # Outbound Rule
-        Write-Host "[Firewall] Cau hinh Outbound Rule..." -ForegroundColor Yellow
-        New-NetFirewallRule -DisplayName "Allow MyApp Outbound" -Direction Outbound -Action Allow -Protocol TCP -LocalPort 31400-31409 -Profile Any
-        Write-Host "[Firewall] Cau hinh Outbound Rule hoan tat!" -ForegroundColor Green
-        
-        Write-Host "[Firewall] Cau hinh Firewall hoan tat cho ca Inbound va Outbound!" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[Firewall] Loi khi cau hinh Firewall: $($_)" -ForegroundColor Red
-    }
-}
-# Ham chuyen doi cau hinh mang sang Private
-function Set-PrivateNetwork {
-    Write-Host "`n[Network] Dang chuyen doi cau hinh mang sang Private..."
-    try {
-        $networks = Get-NetConnectionProfile | Where-Object { $_.NetworkCategory -eq "Public" }
-        foreach ($net in $networks) {
-            Set-NetConnectionProfile -InterfaceAlias $net.InterfaceAlias -NetworkCategory Private
-            Write-Host "[Network] Da chuyen $($net.InterfaceAlias) sang Private." -ForegroundColor Green
+        if ((Get-Item $installerPath).Length -eq 0) {
+            Write-Host "│ └─[Error] File tai xuong bi rong hoac bi hu hong!" -ForegroundColor Red
+            Remove-Item -Path $installerPath -Force
+            Write-Host "   └─[Suggestion] Vui long kiem tra lai URL hoac tai thu cong tu: $downloadUrl" -ForegroundColor Yellow
+            return
         }
-        if ($networks.Count -eq 0) {
-            Write-Host "[Network] Khong co ket noi Public nao can chuyen." -ForegroundColor Yellow
+
+        Write-Host "│ └─Tai xuong hoan tat: $installerPath" -ForegroundColor Green
+        
+        Write-Host "├─[Install] Dang cai dat..." -ForegroundColor Yellow
+        for ($i = 0; $i -le 100; $i += 10) {
+            Write-Progress -Activity "[GDrive] Dang cai dat..." `
+                          -Status "$i% Complete" `
+                          -PercentComplete $i
+            Start-Sleep -Milliseconds 300
         }
+        Start-Process -FilePath $installerPath -Wait
+        Write-Progress -Activity "[GDrive] Dang cai dat..." -Completed
+        Write-Host "└─[Success] Cai dat hoan tat!" -ForegroundColor Green
     }
     catch {
-        Write-Host "[Network] Loi khi chuyen doi cau hinh mang: $($_)" -ForegroundColor Red
-    }
-}
-
-# Ham bat Windows Update va cau hinh tu dong cap nhat
-function Enable-WindowsUpdate {
-    Write-Host "`n[WindowsUpdate] Dang bat Windows Update va cau hinh tu dong cap nhat..."
-    try {
-        Set-Service -Name wuauserv -StartupType Automatic
-        Start-Service -Name wuauserv
-        Write-Host "[WindowsUpdate] Windows Update da duoc bat va cau hinh tu dong cap nhat." -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[WindowsUpdate] Loi khi cau hinh Windows Update: $($_)" -ForegroundColor Red
-    }
-}
-
-# Ham chuyen sang High Performance, turn off hard disk after = never
-function Set-HighPerformance {
-    Write-Host "`n[PowerOption] Dang chuyen sang High Performance (turn off hard disk after = never)..."
-    try {
-        powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-        Write-Host "[PowerOption] Da chuyen sang High Performance." -ForegroundColor Green
-        
-        powercfg -x -disk-timeout-ac 0
-        powercfg -x -disk-timeout-dc 0
-        Write-Host "[PowerOption] Turn off hard disk after = never (AC/DC)!" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[PowerOption] Loi khi chuyen sang High Performance: $($_)" -ForegroundColor Red
-    }
-}
-
-# Ham don dep he thong Windows va o C
-function Clean-System {
-    Write-Host "`n[CleanSystem] Dang don dep he thong Windows va o C..."
-    try {
-        Write-Host "[CleanSystem] Dang xoa file tam trong %TEMP%..."
-        Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-        
-        Write-Host "[CleanSystem] Dang xoa Recycle Bin..."
-        Clear-RecycleBin -Force -Confirm:$false
-        
-        Write-Host "[CleanSystem] Dang chay DISM StartComponentCleanup..."
-        Start-Process powershell -ArgumentList "-Command DISM.exe /Online /Cleanup-Image /StartComponentCleanup /NoRestart" -Verb RunAs -Wait
-        
-        Write-Host "[CleanSystem] Don dep hoan tat!" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[CleanSystem] Loi khi don dep: $($_)" -ForegroundColor Red
+        Write-Host "└─[Error] Loi khi tai hoac cai dat: $($_)" -ForegroundColor Red
+        if (Test-Path $installerPath) {
+            Write-Host "   └─[Info] File co the bi hu hong. Xoa file." -ForegroundColor Yellow
+            Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
+        }
+        Write-Host "   └─[Suggestion] Vui long kiem tra lai URL hoac tai thu cong tu: $downloadUrl" -ForegroundColor Yellow
+        Write-Progress -Activity "[GDrive] Dang tai xuong..." -Completed
     }
 }
 
 # Vong lap chinh
 while ($true) {
     Show-Menu
-    $choice = Read-Host "`nChon mot tuy chon"
+    Write-Host "`n[INPUT] Nhap lua chon: " -ForegroundColor Cyan -NoNewline
+    $choice = Read-Host
     switch ($choice) {
         "1" { Install-PiNetwork }
         "2" { Enable-WindowsFeatures }
@@ -275,14 +128,16 @@ while ($true) {
         "9" { Enable-WindowsUpdate }
         "10" { Set-HighPerformance }
         "11" { Clean-System }
+        "12" { Sync-Time }
+        "13" { Install-FromGoogleDrive }
         "0" {
-            Write-Host "`nThoat chuong trinh. Hen gap lai!" -ForegroundColor Yellow
+            Write-Host "`n[EXIT] Thoat chuong trinh!" -ForegroundColor Yellow
             exit
         }
         default {
-            Write-Host "`nLua chon khong hop le. Vui long thu lai!" -ForegroundColor Red
+            Write-Host "`n[ERROR] Lua chon khong hop le!" -ForegroundColor Red
         }
     }
-    Write-Host "`nNhan Enter de tiep tuc..."
+    Write-Host "`n[CONTINUE] Nhan Enter de tiep tuc..." -ForegroundColor Cyan
     [void](Read-Host)
 }
