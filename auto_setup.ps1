@@ -47,11 +47,46 @@ function Show-Menu {
     Write-Host "╚════════════════════════════════════════╝" -ForegroundColor Cyan
 }
 
-# Ham tai Pi Node / Pi Network (giả lập)
+# Ham tai Pi Node / Pi Network
 function Install-PiNetwork {
-    Write-Host "[PiNode] Dang tai va cai dat Pi Network..." -ForegroundColor Cyan
-    Start-Sleep -Seconds 2
-    Write-Host "[PiNode] Hoan tat!" -ForegroundColor Green
+    Write-Host "`n[PiNode] Dang xu ly tai va cai dat Pi Network..." -ForegroundColor Cyan
+    $downloadUrl = "https://downloads.minepi.com/Pi%20Network%20Setup%200.5.0.exe"
+    $installerPath = "$env:TEMP\Pi.Network.Setup.0.5.0.exe"
+    
+    try {
+        if (Test-Path $installerPath) {
+            Write-Host "├─[Cleanup] Xoa file cu: $installerPath" -ForegroundColor Yellow
+            Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
+        }
+
+        $webClient = New-Object System.Net.WebClient
+        Register-ObjectEvent $webClient DownloadProgressChanged -SourceIdentifier "PiNodeDownload" -Action {
+            Write-Progress -Activity "[PiNode] Dang tai xuong..." `
+                          -Status "$($EventArgs.ProgressPercentage)% Complete" `
+                          -PercentComplete $EventArgs.ProgressPercentage
+        } | Out-Null
+        
+        Write-Host "├─[Download] Dang tai file tu MinePi..." -ForegroundColor Yellow
+        $webClient.DownloadFile($downloadUrl, $installerPath)
+        Unregister-Event -SourceIdentifier "PiNodeDownload"
+        Write-Progress -Activity "[PiNode] Dang tai xuong..." -Completed
+
+        if (-not (Test-Path $installerPath) -or (Get-Item $installerPath).Length -eq 0) {
+            Write-Host "│ └─[Error] Tai xuong that bai hoac file bi hu hong!" -ForegroundColor Red
+            Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
+            Write-Host "   └─[Suggestion] Vui long kiem tra lai URL: $downloadUrl" -ForegroundColor Yellow
+            return
+        }
+
+        Write-Host "│ └─Tai xuong hoan tat: $installerPath" -ForegroundColor Green
+        
+        Write-Host "├─[Install] Dang cai dat..." -ForegroundColor Yellow
+        Start-Process -FilePath $installerPath -Wait
+        Write-Host "└─[Success] Cai dat Pi Network hoan tat!" -ForegroundColor Green
+    } catch {
+        Write-Host "└─[Error] Loi khi tai hoac cai dat: $($_)" -ForegroundColor Red
+        Write-Host "   └─[Suggestion] Vui long kiem tra lai URL: $downloadUrl" -ForegroundColor Yellow
+    }
 }
 
 # Ham kich hoat Windows Features
