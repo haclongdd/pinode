@@ -1,4 +1,4 @@
-﻿# Tu dong kiem tra va khoi dong lai script voi quyen Administrator
+# Tu dong kiem tra va khoi dong lai script voi quyen Administrator
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     Write-Host "[ADMIN] Dang khoi dong lai script voi quyen Administrator..." -ForegroundColor Yellow
     $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
