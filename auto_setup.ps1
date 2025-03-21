@@ -37,6 +37,8 @@ function Show-Menu {
     Write-Host " 11. Don dep he thong Windows va o C" -ForegroundColor Green
     Write-Host " 12. Dong bo thoi gian (UTC+7 Bangkok, Hanoi)" -ForegroundColor Green
     Write-Host " 13. Tai Pi Node / Pi Network" -ForegroundColor Green
+    Write-Host " 14. Fix Windows Assistant" -ForegroundColor Green
+    Write-Host " 15. Driver" -ForegroundColor Green
     Write-Host "  0. Thoat" -ForegroundColor Red
     Write-Host "╔════════════════════════════════════════╗" -ForegroundColor Cyan
     Write-Host "║ [INFO] TOOL DUOC TAO BOI @LONGKA25A    ║" -ForegroundColor Yellow
@@ -467,6 +469,184 @@ function Sync-Time {
     }
 }
 
+# Ham Fix Windows Assistant (tai 2 file ve Desktop)
+function Fix-WindowsAssistant {
+    Write-Host "`n[Fix Windows Assistant] Dang tai cac file ve Desktop..." -ForegroundColor Cyan
+    $desktopPath = [Environment]::GetFolderPath("Desktop")
+    
+    # File 1: MediaCreationToolW11.exe
+    $url1 = "https://www.dropbox.com/scl/fi/islc2tuiej9qs9262hsp9/MediaCreationToolW11.exe?rlkey=pzsqyk4t9t3yk61uw701ifwxb&st=sw5922xe&dl=1"
+    $filePath1 = "$desktopPath\MediaCreationToolW11.exe"
+    
+    # File 2: Windows10Upgrade28084.exe
+    $url2 = "https://www.dropbox.com/scl/fi/hh6h7tnpsepb91zktnrs4/Windows10Upgrade28084.exe?rlkey=75vdkec4h4z92ro4as5tctx9l&st=5n966sxm&dl=1"
+    $filePath2 = "$desktopPath\Windows10Upgrade28084.exe"
+    
+    # Tai file 1
+    try {
+        Write-Host "├─[File 1/2] Dang tai MediaCreationToolW11.exe..." -ForegroundColor Yellow
+        $totalBytes = -1
+        try {
+            $webRequest = [System.Net.HttpWebRequest]::Create($url1)
+            $webResponse = $webRequest.GetResponse()
+            $totalBytes = $webResponse.ContentLength
+            $webResponse.Close()
+        } catch {
+            Write-Host "│ └─[Warning] Khong the lay kich thuoc file: $($_)" -ForegroundColor Yellow
+        }
+
+        if ($totalBytes -eq -1) {
+            Write-Host "├─[Download] Dang tai file (Khong the lay kich thuoc file)..." -ForegroundColor Yellow
+        } else {
+            Write-Host "├─[Download] Dang tai file (Tong kich thuoc: $([math]::Round($totalBytes / 1MB, 2)) MB)..." -ForegroundColor Yellow
+        }
+
+        $job = Start-Job -ScriptBlock {
+            param($url, $path)
+            Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
+        } -ArgumentList $url1, $filePath1
+
+        while ($job.State -eq "Running") {
+            if (Test-Path $filePath1) {
+                $bytesRead = (Get-Item $filePath1).Length
+                if ($totalBytes -gt 0) {
+                    $percent = [math]::Round(($bytesRead / $totalBytes) * 100, 2)
+                    $mbRead = [math]::Round($bytesRead / 1MB, 2)
+                    $mbTotal = [math]::Round($totalBytes / 1MB, 2)
+                    Write-Host "`r├─[Download] Dang tai... ($mbRead MB / $mbTotal MB - $percent%)" -ForegroundColor Yellow -NoNewline
+                }
+            }
+            Start-Sleep -Milliseconds 500
+        }
+
+        $job | Receive-Job -Wait -AutoRemoveJob
+        Write-Host "`n│ └─Tai xuong hoan tat: $filePath1" -ForegroundColor Green
+
+        if (-not (Test-Path $filePath1) -or (Get-Item $filePath1).Length -eq 0) {
+            Write-Host "│ └─[Error] Tai xuong that bai hoac file bi hu hong!" -ForegroundColor Red
+            Write-Host "   └─[Suggestion] Vui long kiem tra lai URL: $url1" -ForegroundColor Yellow
+            return
+        }
+    } catch {
+        Write-Host "`n└─[Error] Loi khi tai file MediaCreationToolW11.exe: $($_)" -ForegroundColor Red
+        Write-Host "   └─[Suggestion] Vui long kiem tra lai URL: $url1" -ForegroundColor Yellow
+        return
+    }
+
+    # Tai file 2
+    try {
+        Write-Host "├─[File 2/2] Dang tai Windows10Upgrade28084.exe..." -ForegroundColor Yellow
+        $totalBytes = -1
+        try {
+            $webRequest = [System.Net.HttpWebRequest]::Create($url2)
+            $webResponse = $webRequest.GetResponse()
+            $totalBytes = $webResponse.ContentLength
+            $webResponse.Close()
+        } catch {
+            Write-Host "│ └─[Warning] Khong the lay kich thuoc file: $($_)" -ForegroundColor Yellow
+        }
+
+        if ($totalBytes -eq -1) {
+            Write-Host "├─[Download] Dang tai file (Khong the lay kich thuoc file)..." -ForegroundColor Yellow
+        } else {
+            Write-Host "├─[Download] Dang tai file (Tong kich thuoc: $([math]::Round($totalBytes / 1MB, 2)) MB)..." -ForegroundColor Yellow
+        }
+
+        $job = Start-Job -ScriptBlock {
+            param($url, $path)
+            Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
+        } -ArgumentList $url2, $filePath2
+
+        while ($job.State -eq "Running") {
+            if (Test-Path $filePath2) {
+                $bytesRead = (Get-Item $filePath2).Length
+                if ($totalBytes -gt 0) {
+                    $percent = [math]::Round(($bytesRead / $totalBytes) * 100, 2)
+                    $mbRead = [math]::Round($bytesRead / 1MB, 2)
+                    $mbTotal = [math]::Round($totalBytes / 1MB, 2)
+                    Write-Host "`r├─[Download] Dang tai... ($mbRead MB / $mbTotal MB - $percent%)" -ForegroundColor Yellow -NoNewline
+                }
+            }
+            Start-Sleep -Milliseconds 500
+        }
+
+        $job | Receive-Job -Wait -AutoRemoveJob
+        Write-Host "`n│ └─Tai xuong hoan tat: $filePath2" -ForegroundColor Green
+
+        if (-not (Test-Path $filePath2) -or (Get-Item $filePath2).Length -eq 0) {
+            Write-Host "│ └─[Error] Tai xuong that bai hoac file bi hu hong!" -ForegroundColor Red
+            Write-Host "   └─[Suggestion] Vui long kiem tra lai URL: $url2" -ForegroundColor Yellow
+            return
+        }
+    } catch {
+        Write-Host "`n└─[Error] Loi khi tai file Windows10Upgrade28084.exe: $($_)" -ForegroundColor Red
+        Write-Host "   └─[Suggestion] Vui long kiem tra lai URL: $url2" -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host "└─[Success] Da tai 2 file ve Desktop thanh cong!" -ForegroundColor Green
+}
+
+# Ham tai Driver (tai tu dong tu pCloud)
+function Install-Driver {
+    Write-Host "`n[Driver] Dang tai Driver ve Desktop..." -ForegroundColor Cyan
+    Write-Host "│ [Note] Link tai driver co the het han sau 7 ngay. Neu loi, vui long lien he @LONGKA25A (0878566247) de lay link moi!" -ForegroundColor Yellow
+    $downloadUrl = "https://p-tok1.pcloud.com/cfZgjMzniZaIqsOf7ZsXRT7ZZhsXNXkZ2ZZ3vJZZll6Mk5ZN8ZQHZNkZHYZ94ZuHZCQZSYZVHZEYZBzZGXZL4Zv4Zgf9YSP2lBohSLlEprmHF2VIT4eE7/EasyDrv721_Win10.x64_7.21.509.6%20%281%29.rar"
+    $desktopPath = [Environment]::GetFolderPath("Desktop")
+    $filePath = "$desktopPath\EasyDrv721_Win10.x64_7.21.509.6 (1).rar"
+    
+    try {
+        Write-Host "├─[Download] Dang tai EasyDrv721_Win10.x64_7.21.509.6 (1).rar..." -ForegroundColor Yellow
+        $totalBytes = -1
+        try {
+            $webRequest = [System.Net.HttpWebRequest]::Create($downloadUrl)
+            $webResponse = $webRequest.GetResponse()
+            $totalBytes = $webResponse.ContentLength
+            $webResponse.Close()
+        } catch {
+            Write-Host "│ └─[Warning] Khong the lay kich thuoc file: $($_)" -ForegroundColor Yellow
+        }
+
+        if ($totalBytes -eq -1) {
+            Write-Host "├─[Download] Dang tai file (Khong the lay kich thuoc file)..." -ForegroundColor Yellow
+        } else {
+            Write-Host "├─[Download] Dang tai file (Tong kich thuoc: $([math]::Round($totalBytes / 1MB, 2)) MB)..." -ForegroundColor Yellow
+        }
+
+        $job = Start-Job -ScriptBlock {
+            param($url, $path)
+            Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
+        } -ArgumentList $downloadUrl, $filePath
+
+        while ($job.State -eq "Running") {
+            if (Test-Path $filePath) {
+                $bytesRead = (Get-Item $filePath).Length
+                if ($totalBytes -gt 0) {
+                    $percent = [math]::Round(($bytesRead / $totalBytes) * 100, 2)
+                    $mbRead = [math]::Round($bytesRead / 1MB, 2)
+                    $mbTotal = [math]::Round($totalBytes / 1MB, 2)
+                    Write-Host "`r├─[Download] Dang tai... ($mbRead MB / $mbTotal MB - $percent%)" -ForegroundColor Yellow -NoNewline
+                }
+            }
+            Start-Sleep -Milliseconds 500
+        }
+
+        $job | Receive-Job -Wait -AutoRemoveJob
+        Write-Host "`n│ └─Tai xuong hoan tat: $filePath" -ForegroundColor Green
+
+        if (-not (Test-Path $filePath) -or (Get-Item $filePath).Length -eq 0) {
+            Write-Host "│ └─[Error] Tai xuong that bai hoac file bi hu hong!" -ForegroundColor Red
+            Write-Host "   └─[Suggestion] Vui long kiem tra lai URL: $downloadUrl" -ForegroundColor Yellow
+            return
+        }
+
+        Write-Host "└─[Success] Da tai EasyDrv721_Win10.x64_7.21.509.6 (1).rar ve Desktop thanh cong!" -ForegroundColor Green
+    } catch {
+        Write-Host "`n└─[Error] Loi khi tai file EasyDrv721_Win10.x64_7.21.509.6 (1).rar: $($_)" -ForegroundColor Red
+        Write-Host "   └─[Suggestion] Vui long kiem tra lai URL: $downloadUrl" -ForegroundColor Yellow
+    }
+}
+
 # Vong lap chinh
 while ($true) {
     Show-Menu
@@ -486,6 +666,8 @@ while ($true) {
         "11" { Clean-System }
         "12" { Sync-Time }
         "13" { Install-PiNetwork }
+        "14" { Fix-WindowsAssistant }
+        "15" { Install-Driver }
         "0" {
             Write-Host "`n[EXIT] Thoat chuong trinh!" -ForegroundColor Yellow
             exit
